@@ -19,7 +19,6 @@ func (sch *ScheduleCollection) GetNextSchedule() (nextSchedule *Schedule) {
 	for _, schedule := range sch.schedules {
 		if nextSchedule == nil || schedule.nextRun.Before(nextSchedule.nextRun) {
 			nextSchedule = schedule
-			break
 		}
 	}
 	return

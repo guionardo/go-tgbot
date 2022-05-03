@@ -2,6 +2,7 @@ package example
 
 import (
 	"context"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/guionardo/go-tgbot/tgbot"
@@ -36,5 +37,16 @@ func Run() {
 		svc.Publish(msg)
 		return nil
 	})
+
+	svc.AddSchedule(tgbot.CreateSchedule("Every minute", time.Minute, func(ctx context.Context) error {
+		svc := tgbot.GetBotService(ctx)
+		svc.Publish(tgbotapi.NewMessage(205478553, "PING MINUTE"))
+		return nil
+	}))
+  svc.AddSchedule(tgbot.CreateSchedule("Every 10 seconds", time.Second*10, func(ctx context.Context) error {
+		svc := tgbot.GetBotService(ctx)
+		svc.Publish(tgbotapi.NewMessage(205478553, "PING SECONDS"))
+		return nil
+	}))
 	svc.Start()
 }

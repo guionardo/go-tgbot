@@ -124,3 +124,7 @@ func (svc *GoTGBotSevice) RunnersRunning() int {
 func (svc *GoTGBotSevice) Publish(message tgbotapi.Chattable) {
 	svc.publisher.Publish(message)
 }
+
+func (svc *GoTGBotSevice) AddSchedule(schedule *Schedule) {
+	svc.worker.AddSchedule(schedule)
+}

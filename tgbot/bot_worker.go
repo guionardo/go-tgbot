@@ -2,7 +2,6 @@ package tgbot
 
 import (
 	"context"
-	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -21,7 +20,7 @@ func createBotWorker(bot *tgbotapi.BotAPI, schedules IScheduleCollection) *BotWo
 	return worker
 }
 
-func (wrk *BotWorker) AddSchedule(schedule *Schedule, action BotWorkerAction) {
+func (wrk *BotWorker) AddSchedule(schedule *Schedule) {
 	wrk.schedules.AddSchedule(schedule)
 }
 
@@ -40,11 +39,8 @@ func (wrk *BotWorker) Run(ctx context.Context) {
 			return
 		default:
 			nextSchedule := wrk.schedules.GetNextSchedule()
-			if !nextSchedule.CanRun() {
-				waitTime := nextSchedule.nextRun.Sub(time.Now())
-				wrk.logger.Info("wait %v for schedule %s", waitTime, nextSchedule.title)
-				time.Sleep(waitTime)
-			}
+      nextSchedule.WaitUntilNextRunRound()
+			nextSchedule.DoAction(ctx)
 		}
 	}
 }
