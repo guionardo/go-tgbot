@@ -4,15 +4,16 @@ import (
 	"context"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	sch "github.com/guionardo/go-tgbot/pkg/schedules"
 )
 
 type BotWorker struct {
 	BotRunner
-	schedules IScheduleCollection
+	schedules *sch.ScheduleCollection
 }
 type BotWorkerAction func(ctx context.Context) error
 
-func createBotWorker(bot *tgbotapi.BotAPI, schedules IScheduleCollection) *BotWorker {
+func createBotWorker(bot *tgbotapi.BotAPI, schedules *sch.ScheduleCollection) *BotWorker {
 	worker := &BotWorker{
 		schedules: schedules,
 	}
@@ -20,27 +21,6 @@ func createBotWorker(bot *tgbotapi.BotAPI, schedules IScheduleCollection) *BotWo
 	return worker
 }
 
-func (wrk *BotWorker) AddSchedule(schedule *Schedule) {
+func (wrk *BotWorker) AddSchedule(schedule *sch.Schedule) {
 	wrk.schedules.AddSchedule(schedule)
-}
-
-func (wrk *BotWorker) Run(ctx context.Context) {
-	defer wrk.Stop()
-	wrk.Start()
-	if wrk.schedules.Count() == 0 {
-		wrk.logger.Info("no schedules to run")
-		return
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			wrk.logger.Info("context done")
-			return
-		default:
-			nextSchedule := wrk.schedules.GetNextSchedule()
-      nextSchedule.WaitUntilNextRunRound()
-			nextSchedule.DoAction(ctx)
-		}
-	}
 }

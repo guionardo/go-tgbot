@@ -3,9 +3,11 @@ package tgbot
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	sch "github.com/guionardo/go-tgbot/pkg/schedules"
+	"github.com/guionardo/go-tgbot/tgbot/infra"
+	"github.com/guionardo/go-tgbot/tgbot/runners"
 )
 
 type GoTGBotSevice struct {
@@ -17,22 +19,24 @@ type GoTGBotSevice struct {
 	cancel          context.CancelFunc
 	stop            context.CancelFunc
 	internalChannel chan InternalMessage
+	repository      IRepository
+	configuration   *Configuration
 }
 
-func CreateBotService(telegramToken string, injections ...interface{}) (service *GoTGBotSevice, err error) {
+func CreateBotService(config *Configuration, injections ...interface{}) (service *GoTGBotSevice, err error) {
 	var bot *tgbotapi.BotAPI
-	bot, err = tgbotapi.NewBotAPI(telegramToken)
+	bot, err = tgbotapi.NewBotAPI(config.BotToken)
 	if err != nil {
 		return
 	}
 
-	logger := GetLogger("GoTGBotSevice")
+	logger := infra.GetLogger("GoTGBotSevice")
 	user, err := bot.GetMe()
 	logger.Infof("Authorized on account %s", user.UserName)
 	var listener *BotListener
 	var worker *BotWorker
 	var publisher *BotPublisher
-	var schedules *ScheduleCollection
+	var schedules *sch.ScheduleCollection
 
 	for _, injection := range injections {
 		switch injection.(type) {
@@ -42,8 +46,8 @@ func CreateBotService(telegramToken string, injections ...interface{}) (service 
 			worker = injection.(*BotWorker)
 		case *BotPublisher:
 			publisher = injection.(*BotPublisher)
-		case *ScheduleCollection:
-			schedules = injection.(*ScheduleCollection)
+		case *sch.ScheduleCollection:
+			schedules = injection.(*sch.ScheduleCollection)
 		}
 
 	}
@@ -55,7 +59,7 @@ func CreateBotService(telegramToken string, injections ...interface{}) (service 
 	listener.SetInternalChannel(internalChannel)
 
 	if schedules == nil {
-		schedules = CreateScheduleCollection()
+		schedules = sch.CreateScheduleCollection()
 	}
 	if worker == nil {
 		worker = createBotWorker(bot, schedules)
@@ -67,11 +71,17 @@ func CreateBotService(telegramToken string, injections ...interface{}) (service 
 	}
 	publisher.SetInternalChannel(internalChannel)
 
+	db, err := infra.GetSQLiteDB(config.RepositoryConnectionString)
+	if err != nil {
+		panic(err)
+	}
 	service = &GoTGBotSevice{
 		listener:        listener,
 		worker:          worker,
 		publisher:       publisher,
 		internalChannel: internalChannel,
+		repository:      infra.CreateMessageRepository(db),
+		configuration:   config,
 	}
 
 	service.Init(bot, "GoTGBotSevice")
@@ -83,27 +93,14 @@ func (svc *GoTGBotSevice) Start() error {
 		return fmt.Errorf("service already started")
 	}
 	botContext, cancel := CreateBotContext(svc)
-
 	svc.cancel = cancel
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		svc.listener.Run(botContext)
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		svc.worker.Run(botContext)
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		svc.publisher.Run(botContext)
-	}()
-	svc.logger.Info("started")
-	wg.Wait()
+	runners := runners.NewRunnerCollection()
+	runners.CreateRunnerCustomLoop("listener", BotListenerAction, svc)
+	runners.CreateRunnerCustomLoop("publisher", BotPublisherAction, svc)
+	runners.CreateRunner("worker", BotWorkerRunnerAction, svc)
+	runners.RunAll(botContext)
+
 	return nil
 }
 
@@ -117,14 +114,22 @@ func (svc *GoTGBotSevice) Stop() error {
 	return nil
 }
 
-func (svc *GoTGBotSevice) RunnersRunning() int {
-	return svc.listener.IsRunningInt() + svc.worker.IsRunningInt() + svc.publisher.IsRunningInt()
-}
-
 func (svc *GoTGBotSevice) Publish(message tgbotapi.Chattable) {
 	svc.publisher.Publish(message)
 }
 
-func (svc *GoTGBotSevice) AddSchedule(schedule *Schedule) {
-	svc.worker.AddSchedule(schedule)
+func (svc *GoTGBotSevice) Publisher() *BotPublisher {
+	return svc.publisher
+}
+
+func (svc *GoTGBotSevice) Repository() IRepository {
+	return svc.repository
+}
+
+func (svc *GoTGBotSevice) Listener() *BotListener {
+	return svc.listener
+}
+
+func (svc *GoTGBotSevice) Configuration() *Configuration {
+	return svc.configuration
 }

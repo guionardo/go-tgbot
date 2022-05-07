@@ -1,4 +1,4 @@
-package tgbot
+package infra
 
 import (
 	"os"

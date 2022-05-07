@@ -1,29 +1,18 @@
-package tgbot
+package schedules
 
 import (
 	"context"
 	"time"
 
+	"github.com/guionardo/go-tgbot/tgbot/infra"
 	"github.com/sirupsen/logrus"
-)
-
-type (
-	Schedule struct {
-		title        string
-		lastRun      time.Time
-		nextRun      time.Time
-		interval     time.Duration
-		action       ScheduledAction
-		lastWasRound bool
-	}
-	ScheduledAction func(ctx context.Context) error
 )
 
 var schLogger *logrus.Entry
 
 func schGetLogger() *logrus.Entry {
 	if schLogger == nil {
-		schLogger = GetLogger("schedule")
+		schLogger = infra.GetLogger("schedule")
 	}
 	return schLogger
 }

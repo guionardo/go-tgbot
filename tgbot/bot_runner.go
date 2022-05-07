@@ -5,6 +5,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/guionardo/go-tgbot/tgbot/infra"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,7 +16,7 @@ type (
 		logger          *logrus.Entry
 		name            string
 		lock            sync.RWMutex
-		internalChannel chan InternalMessage
+		internalChannel InternalChannel
 	}
 )
 
@@ -48,10 +49,7 @@ func (runner *BotRunner) Stop() {
 	defer runner.lock.Unlock()
 	runner.isRunning = false
 	if runner.internalChannel != nil {
-		runner.internalChannel <- InternalMessage{
-			source:  runner.name,
-			message: "stop",
-		}
+		runner.internalChannel.Stop(runner.name)
 	}
 	runner.logger.Info("stopped")
 }
@@ -62,7 +60,7 @@ func (runner *BotRunner) SetInternalChannel(channel chan InternalMessage) {
 
 func (runner *BotRunner) Init(bot *tgbotapi.BotAPI, name string) {
 	runner.bot = bot
-	runner.logger = GetLogger(name)
+	runner.logger = infra.GetLogger(name)
 	runner.name = name
 }
 
@@ -72,7 +70,7 @@ func (runner *BotRunner) String() string {
 
 func Wait(runners ...IContextRunner) {
 	running := make(map[string]IContextRunner)
-	logger := GetLogger("Wait")
+	logger := infra.GetLogger("Wait")
 	for _, runner := range runners {
 		running[runner.GetName()] = runner
 	}
