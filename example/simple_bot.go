@@ -6,27 +6,16 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/guionardo/go-tgbot/tgbot"
 	"github.com/guionardo/go-tgbot/tgbot/automations"
-	"github.com/guionardo/go-tgbot/tgbot/infra"
 )
 
-func getConfig() *tgbot.Configuration {
-	config, err := tgbot.LoadConfiguration()
-	logger := infra.GetLogger("simple_bot")
-	if err != nil {
-		logger.Panicf("Error loading configuration: %v", err)
-	}
-
-	return config
-}
-
 func Run() {
-	logger := infra.GetLogger("simple_bot")
-	logger.Info("Starting Simple Bot")
-	config := getConfig()
-	svc, err := tgbot.CreateBotService(config)
-	if err != nil {
-		logger.Panicf("Error creating bot service: %v", err)
-	}
+
+	svc := tgbot.CreateBotService().
+		LoadConfigurationFromEnv("TG_").
+		InitBot().
+		AddWorkers()
+
+
 	automations.AddHelloWorldAutomation(svc)
 	automations.AddSetupCommandsAutomation(svc)
 	automations.AddHouseKeepingAutomation(svc)
@@ -50,8 +39,7 @@ func Run() {
 
 	svc.AddHandler("all", func(update tgbotapi.Update) bool {
 		return true
-	}, func(ctx context.Context, update tgbotapi.Update) error {
-		logger.Infof("%s : %s", update.Message.From.UserName, update.Message.Text)
+	}, func(ctx context.Context, update tgbotapi.Update) error {		
 		svc := tgbot.GetBotService(ctx)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello, "+update.Message.From.UserName+"!")
 		msg.ReplyToMessageID = update.Message.MessageID

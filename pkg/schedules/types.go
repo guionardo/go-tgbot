@@ -7,10 +7,10 @@ import (
 
 type (
 	Schedule struct {
-		title        string
+		Title        string
 		lastRun      time.Time
 		nextRun      time.Time
-		interval     time.Duration
+		Interval     time.Duration
 		action       ScheduledAction
 		lastWasRound bool
 	}

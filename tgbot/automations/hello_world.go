@@ -9,7 +9,8 @@ import (
 	"github.com/guionardo/go-tgbot/tgbot"
 )
 
-func AddHelloWorldAutomation(svc *tgbot.GoTGBotSevice) *tgbot.GoTGBotSevice {
+// AddHelloWorldAutomation AddSetupCommandsAutomation adds a schedule to run the setup commands
+func AddHelloWorldAutomation(svc *tgbot.GoTGBotService) *tgbot.GoTGBotService {
 	svc.AddScheduleRunOnce(schedules.CreateSchedule("Chats greetings", time.Hour, func(ctx context.Context) error {
 		getLogger().Infof("Running Hello World")
 		svc := tgbot.GetBotService(ctx)
@@ -18,10 +19,9 @@ func AddHelloWorldAutomation(svc *tgbot.GoTGBotSevice) *tgbot.GoTGBotSevice {
 			return err
 		}
 		for _, chat := range chats {
-			svc.Publisher().SendTextMessage(int64(chat.ID), fmt.Sprintf("🤖 %s - %s", svc.Configuration().BotName, svc.Configuration().BotHelloWorld))
+			svc.Publisher().SendTextMessage(int64(chat.ID), fmt.Sprintf("🤖 %s - %s", svc.Configuration().Bot.Name, svc.Configuration().Bot.HelloWorld))
 		}
 		return nil
-	}))
-	getLogger().Infof("Added Hello World Automation")
+	}))	
 	return svc
 }

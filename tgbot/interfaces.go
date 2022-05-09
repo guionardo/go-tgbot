@@ -9,8 +9,7 @@ import (
 )
 
 type IContextRunner interface {
-	Run(ctx context.Context)
-	IsRunning() bool
+	Run(ctx context.Context)	
 	GetName() string
 }
 

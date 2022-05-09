@@ -54,13 +54,13 @@ func ActionLoop3(ctx context.Context, runner *runners.Runner) error {
 	return nil //fmt.Errorf("Exiting runner %s", runner.Name)
 }
 func RunRunners() {
-	runners := runners.NewRunnerCollection()
+	runnerCollection := runners.NewRunnerCollection()
 
-	runners.CreateRunner("runner1", ActionLoop1, 0)
-	runners.CreateRunner("runner2", ActionLoop2, 0)
-	runners.CreateRunner("runner3", ActionLoop3, 0)
+	runnerCollection.CreateRunner("runner1", ActionLoop1, 0)
+	runnerCollection.CreateRunner("runner2", ActionLoop2, 0)
+	runnerCollection.CreateRunner("runner3", ActionLoop3, 0)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second*30))
 	defer cancel()
-	runners.RunAll(ctx)
+	runnerCollection.RunAll(ctx)
 
 }

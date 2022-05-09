@@ -19,8 +19,8 @@ func schGetLogger() *logrus.Entry {
 
 func CreateSchedule(title string, interval time.Duration, action ScheduledAction) *Schedule {
 	return &Schedule{
-		title:    title,
-		interval: interval,
+		Title:    title,
+		Interval: interval,
 		action:   action,
 	}
 
@@ -28,15 +28,15 @@ func CreateSchedule(title string, interval time.Duration, action ScheduledAction
 
 func (sch *Schedule) WaitUntilNextRun() {
 	sch.lastWasRound = false
-	sch.nextRun = sch.lastRun.Add(sch.interval)
+	sch.nextRun = sch.lastRun.Add(sch.Interval)
 	sch.waitUntilNextRun()
 }
 
 func (sch *Schedule) WaitUntilNextRunRound() {
 	sch.lastWasRound = true
-	sch.nextRun = sch.lastRun.Add(sch.interval).Round(sch.interval)
+	sch.nextRun = sch.lastRun.Add(sch.Interval).Round(sch.Interval)
 	if sch.nextRun.Before(time.Now()) {
-		sch.nextRun = sch.nextRun.Add(sch.interval)
+		sch.nextRun = sch.nextRun.Add(sch.Interval)
 	}
 	sch.waitUntilNextRun()
 }
@@ -44,7 +44,7 @@ func (sch *Schedule) WaitUntilNextRunRound() {
 func (sch *Schedule) waitUntilNextRun() {
 	waitTime := sch.nextRun.Sub(time.Now())
 	if waitTime.Seconds() > 0 {
-		schGetLogger().Infof("wait %v for schedule %s", waitTime, sch.title)
+		schGetLogger().Infof("wait %v for schedule %s", waitTime, sch.Title)
 		time.Sleep(waitTime)
 	}
 }
@@ -55,7 +55,7 @@ func (sch *Schedule) RunNow() *Schedule {
 }
 
 func (sch *Schedule) RoundNextRun() *Schedule {
-	sch.nextRun = sch.lastRun.Add(sch.interval).Round(sch.interval)
+	sch.nextRun = sch.lastRun.Add(sch.Interval).Round(sch.Interval)
 	return sch
 }
 
@@ -67,8 +67,8 @@ func (sch *Schedule) DoAction(ctx context.Context) {
 	sch.action(ctx)
 	sch.lastRun = time.Now()
 	if sch.lastWasRound {
-		sch.nextRun = sch.lastRun.Add(sch.interval).Round(sch.interval)
+		sch.nextRun = sch.lastRun.Add(sch.Interval).Round(sch.Interval)
 	} else {
-		sch.nextRun = sch.lastRun.Add(sch.interval)
+		sch.nextRun = sch.lastRun.Add(sch.Interval)
 	}
 }

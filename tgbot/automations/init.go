@@ -5,11 +5,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var logger *logrus.Entry
+const authLoggerName = "automations"
 
 func getLogger() *logrus.Entry {
-	if logger == nil {
-		logger = infra.GetLogger("automations")
-	}
-	return logger
+	return infra.GetLogger(authLoggerName)
 }

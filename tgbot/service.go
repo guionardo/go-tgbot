@@ -6,11 +6,12 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	sch "github.com/guionardo/go-tgbot/pkg/schedules"
+	"github.com/guionardo/go-tgbot/tgbot/config"
 	"github.com/guionardo/go-tgbot/tgbot/infra"
 	"github.com/guionardo/go-tgbot/tgbot/runners"
 )
 
-type GoTGBotSevice struct {
+type GoTGBotService struct {
 	BotRunner
 	context         context.Context
 	listener        *BotListener
@@ -18,93 +19,95 @@ type GoTGBotSevice struct {
 	publisher       *BotPublisher
 	cancel          context.CancelFunc
 	stop            context.CancelFunc
-	internalChannel chan InternalMessage
 	repository      IRepository
-	configuration   *Configuration
+	configuration   *config.Configuration
 }
 
-func CreateBotService(config *Configuration, injections ...interface{}) (service *GoTGBotSevice, err error) {
-	var bot *tgbotapi.BotAPI
-	bot, err = tgbotapi.NewBotAPI(config.BotToken)
-	if err != nil {
-		return
-	}
+// CreateBotService creates a new empty bot service
+// This is the first step to create a bot service
+func CreateBotService() *GoTGBotService {
+	return &GoTGBotService{}
+}
 
-	logger := infra.GetLogger("GoTGBotSevice")
-	user, err := bot.GetMe()
-	logger.Infof("Authorized on account %s", user.UserName)
-	var listener *BotListener
-	var worker *BotWorker
-	var publisher *BotPublisher
-	var schedules *sch.ScheduleCollection
-
-	for _, injection := range injections {
-		switch injection.(type) {
-		case *BotListener:
-			listener = injection.(*BotListener)
-		case *BotWorker:
-			worker = injection.(*BotWorker)
-		case *BotPublisher:
-			publisher = injection.(*BotPublisher)
-		case *sch.ScheduleCollection:
-			schedules = injection.(*sch.ScheduleCollection)
-		}
-
-	}
-
-	internalChannel := make(chan InternalMessage, 10)
-	if listener == nil {
-		listener = createBotListener(bot)
-	}
-	listener.SetInternalChannel(internalChannel)
-
-	if schedules == nil {
-		schedules = sch.CreateScheduleCollection()
-	}
-	if worker == nil {
-		worker = createBotWorker(bot, schedules)
-	}
-	worker.SetInternalChannel(internalChannel)
-
-	if publisher == nil {
-		publisher = CreateBotPublisher(bot)
-	}
-	publisher.SetInternalChannel(internalChannel)
-
-	db, err := infra.GetSQLiteDB(config.RepositoryConnectionString)
+func (svc *GoTGBotService) LoadConfigurationFromFile(filename string) *GoTGBotService {
+	cfg, err := config.CreateConfigurationFromFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	service = &GoTGBotSevice{
-		listener:        listener,
-		worker:          worker,
-		publisher:       publisher,
-		internalChannel: internalChannel,
-		repository:      infra.CreateMessageRepository(db),
-		configuration:   config,
-	}
-
-	service.Init(bot, "GoTGBotSevice")
-	return service, nil
+	svc.configuration = cfg
+	return svc
 }
 
-func (svc *GoTGBotSevice) Start() error {
+func (svc *GoTGBotService) LoadConfigurationFromEnv(prefix string) *GoTGBotService {
+	cfg, err := config.CreateConfigurationFromEnv(prefix)
+	if err != nil {
+		panic(err)
+	}
+	svc.configuration = cfg
+	return svc
+}
+
+// InitBot setups bot, loggin
+func (svc *GoTGBotService) InitBot() *GoTGBotService {
+	if svc.configuration == nil {
+		panic("configuration not loaded")
+	}
+	// Setup logging
+	infra.CreateLoggerFactory(&svc.configuration.Logging)
+	svc.logger = infra.GetLogger("GoTGBotService")
+	svc.logger.Infof("Init %s", svc.name)
+
+	// Setup bot
+	bot, err := tgbotapi.NewBotAPI(svc.configuration.Bot.Token)
+	if err != nil {
+		panic(err)
+	}
+	svc.bot = bot
+	svc.logger.Infof("Authorized on account %s", bot.Self.UserName)
+
+	return svc
+}
+
+func (svc *GoTGBotService) AddWorkers() *GoTGBotService {
+
+	// Create listener
+	svc.listener = createBotListener(svc.bot)
+
+	// Create schedules and worker
+	schedules := sch.CreateScheduleCollection()
+	svc.worker = createBotWorker(svc.bot, schedules)
+
+	// Create publisher
+	svc.publisher = CreateBotPublisher(svc.bot)
+
+	// Create repository
+	db, err := infra.GetSQLiteDB(svc.configuration.Repository.ConnectionString)
+	if err != nil {
+		panic(err)
+	}
+	svc.repository = infra.CreateMessageRepository(db)
+
+	svc.Init(svc.bot, "GoTGBotService")
+	return svc
+}
+
+func (svc *GoTGBotService) Start() error {
 	if svc.cancel != nil {
 		return fmt.Errorf("service already started")
 	}
 	botContext, cancel := CreateBotContext(svc)
 	svc.cancel = cancel
 
-	runners := runners.NewRunnerCollection()
-	runners.CreateRunnerCustomLoop("listener", BotListenerAction, svc)
-	runners.CreateRunnerCustomLoop("publisher", BotPublisherAction, svc)
-	runners.CreateRunner("worker", BotWorkerRunnerAction, svc)
-	runners.RunAll(botContext)
+	runnerCollection := runners.NewRunnerCollection()
+	runnerCollection.CreateRunnerCustomLoop("listener", BotListenerAction, svc)
+	runnerCollection.CreateRunnerCustomLoop("publisher", BotPublisherAction, svc)
+	runnerCollection.CreateRunner("worker", BotWorkerRunnerAction, svc)
+	runnerCollection.RunAll(botContext)
 
 	return nil
 }
 
-func (svc *GoTGBotSevice) Stop() error {
+func (svc *GoTGBotService) Stop() error {
 	if svc.cancel == nil {
 		return fmt.Errorf("service not started")
 	}
@@ -114,22 +117,22 @@ func (svc *GoTGBotSevice) Stop() error {
 	return nil
 }
 
-func (svc *GoTGBotSevice) Publish(message tgbotapi.Chattable) {
+func (svc *GoTGBotService) Publish(message tgbotapi.Chattable) {
 	svc.publisher.Publish(message)
 }
 
-func (svc *GoTGBotSevice) Publisher() *BotPublisher {
+func (svc *GoTGBotService) Publisher() *BotPublisher {
 	return svc.publisher
 }
 
-func (svc *GoTGBotSevice) Repository() IRepository {
+func (svc *GoTGBotService) Repository() IRepository {
 	return svc.repository
 }
 
-func (svc *GoTGBotSevice) Listener() *BotListener {
+func (svc *GoTGBotService) Listener() *BotListener {
 	return svc.listener
 }
 
-func (svc *GoTGBotSevice) Configuration() *Configuration {
+func (svc *GoTGBotService) Configuration() *config.Configuration {
 	return svc.configuration
 }

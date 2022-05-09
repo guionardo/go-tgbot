@@ -106,13 +106,14 @@ func (mr *MessageRepository) HouseKeeping(maxAge time.Duration) error {
 	logger := GetLogger("repository:housekeeping")
 	beforeDate := time.Now().Add(-maxAge)
 	logger.Infof("housekeeping data before %s", beforeDate)
-	res := mr.db.Where("updated_at < ?", beforeDate).Delete(&Message{})
+	res := mr.db.Unscoped().Where("updated_at < ?", beforeDate).Delete(&Message{})
 	if err := res.Error; err != nil {
 		logger.Errorf("failed to delete messages: %s", err)
 		return err
 	}
+
 	logger.Infof("deleted %d messages", res.RowsAffected)
-	res = mr.db.Where("updated_at < ?", beforeDate).Delete(&Chat{})
+	res = mr.db.Unscoped().Where("updated_at < ?", beforeDate).Delete(&Chat{})
 	if err := res.Error; err != nil {
 		logger.Errorf("failed to delete chats: %s", err)
 		return err

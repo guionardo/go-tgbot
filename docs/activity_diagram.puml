@@ -1,0 +1,11 @@
+@startuml activity
+
+title Activity Diagram
+
+participant "Bot Service" as svc
+participant "Listener" as lsn
+participant "Worker" as wrk
+participant "Publisher" as pub
+
+
+@enduml

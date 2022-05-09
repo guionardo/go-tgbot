@@ -8,14 +8,13 @@ import (
 	"github.com/guionardo/go-tgbot/tgbot"
 )
 
-func AddHouseKeepingAutomation(svc *tgbot.GoTGBotSevice) *tgbot.GoTGBotSevice {
+func AddHouseKeepingAutomation(svc *tgbot.GoTGBotService) *tgbot.GoTGBotService {
 	svc.AddSchedule(schedules.CreateSchedule("House keeping", time.Hour, func(ctx context.Context) error {
 		getLogger().Info("Running House keep")
 		svc := tgbot.GetBotService(ctx)
-		err := svc.Repository().HouseKeeping(svc.Configuration().HouseKeepingMaxAge)
+		err := svc.Repository().HouseKeeping(svc.Configuration().Repository.HouseKeepingMaxAge)
 
 		return err
-	}))
-	getLogger().Infof("Added Housekeeping Automation")
+	}))	
 	return svc
 }
