@@ -25,7 +25,7 @@ func (cfg *Configuration) FixDefaults() *Configuration {
 	return cfg
 }
 
-func CreateConfigurationFromFile(filename string) (cfg Configuration, err error) {
+func CreateConfigurationFromFile(filename string) (cfg *Configuration, err error) {
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return
@@ -39,7 +39,7 @@ func CreateConfigurationFromFile(filename string) (cfg Configuration, err error)
 		}
 	}
 	config.FixDefaults()
-	return config, nil
+	return &config, nil
 }
 
 func CreateConfigurationFromEnv(prefix string) (cfg *Configuration, err error) {

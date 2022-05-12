@@ -12,8 +12,8 @@ require (
 )
 
 require (
-	github.com/google/go-cmp v0.5.8 // indirect
-	github.com/joho/godotenv v1.4.0 // indirect
+	github.com/google/go-cmp v0.5.8
+	github.com/joho/godotenv v1.4.0
 )
 
 require (
