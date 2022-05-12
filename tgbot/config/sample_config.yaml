@@ -1,0 +1,12 @@
+---
+bot:
+  token: token
+  name: tgbot_test
+  hello_world: "Hello World!"
+repository:
+  connection_string: "sqlite:///:memory:"
+  house_keeping_max_age: 1h0m0s
+logging:
+  level: warn
+  format_time_stamp: ""
+  log_format: ""
