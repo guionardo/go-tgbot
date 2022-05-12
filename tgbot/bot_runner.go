@@ -1,29 +1,18 @@
 package tgbot
 
 import (
-	"sync"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/guionardo/go-tgbot/tgbot/infra"
 	"github.com/sirupsen/logrus"
 )
 
 type (
 	BotRunner struct {
-		bot       *tgbotapi.BotAPI
-		isRunning bool
-		logger    *logrus.Entry
-		name      string
-		lock      sync.RWMutex
+		logger *logrus.Entry
+		name   string
 	}
 )
 
-func (runner *BotRunner) GetName() string {
-	return runner.name
-}
-
-func (runner *BotRunner) Init(bot *tgbotapi.BotAPI, name string) {
-	runner.bot = bot
+func (runner *BotRunner) Init(name string) {
 	runner.logger = infra.GetLogger(name)
 	runner.name = name
 }

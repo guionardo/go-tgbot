@@ -14,12 +14,12 @@ type BotPublisher struct {
 	lastSendTime   time.Time
 }
 
-func CreateBotPublisher(bot *tgbotapi.BotAPI) *BotPublisher {
+func createBotPublisher() *BotPublisher {
 	publisher := &BotPublisher{
 		publishChannel: make(chan tgbotapi.Chattable, 10),
 		lastSendTime:   time.Now(),
 	}
-	publisher.Init(bot, "BotPublisher")
+	publisher.Init("BotPublisher")
 	return publisher
 }
 
@@ -43,9 +43,9 @@ func BotPublisherAction(ctx context.Context, runner *runners.Runner) error {
 			if waitTime < time.Second {
 				time.Sleep(time.Second - waitTime)
 			}
-			_, err := pbx.bot.Send(msg)
+			sndMessage, err := svc.bot.Send(msg)
 			if err != nil {
-				pbx.logger.Errorf("error sending message: %v -  %v", msg, err)
+				pbx.logger.Errorf("error sending message: %v -  %v : %v", msg, err, sndMessage)
 			}
 		}
 	}

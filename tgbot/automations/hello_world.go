@@ -11,7 +11,7 @@ import (
 
 // AddHelloWorldAutomation AddSetupCommandsAutomation adds a schedule to run the setup commands
 func AddHelloWorldAutomation(svc *tgbot.GoTGBotService) *tgbot.GoTGBotService {
-	svc.AddScheduleRunOnce(schedules.CreateSchedule("Chats greetings", time.Hour, func(ctx context.Context) error {
+	svc.SetupBackgroundRunOnceSchedules(schedules.CreateSchedule("Chats greetings", time.Hour, func(ctx context.Context) error {
 		getLogger().Infof("Running Hello World")
 		svc := tgbot.GetBotService(ctx)
 		chats, err := svc.Repository().GetChats()

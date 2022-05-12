@@ -52,6 +52,12 @@ func CreateKeyboardMessage(chatID int64, text string, keyboardOptions ...string)
 	return msg
 }
 
+func CreateReplyMessage(update tgbotapi.Update, text string) tgbotapi.MessageConfig {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+	msg.ReplyToMessageID = update.Message.MessageID
+	return msg
+}
+
 func IsValidUrl(toTest string) bool {
 	_, err := url.ParseRequestURI(toTest)
 	if err != nil {

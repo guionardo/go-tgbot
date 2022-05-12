@@ -9,39 +9,32 @@ import (
 
 type BotListener struct {
 	BotRunner
-	handlers map[string]*BotListenerHandler
-	commands map[string]*BotListenerHandler
-}
-type BotListenerHandler struct {
-	title   string
-	filter  MessageFilter
-	handler MessageHandler
+	handlers map[string]*ListenerFilteredHandler
+	commands map[string]*ListenerCommandHandler
 }
 
 func createBotListener(bot *tgbotapi.BotAPI) *BotListener {
 	listener := &BotListener{
-		handlers: make(map[string]*BotListenerHandler),
-		commands: make(map[string]*BotListenerHandler),
+		handlers: make(map[string]*ListenerFilteredHandler),
+		commands: make(map[string]*ListenerCommandHandler),
 	}
-	listener.Init(bot, "BotListener")
+	listener.Init("BotListener")
 	return listener
 }
 
 func (lst *BotListener) AddHandler(title string, filter func(update tgbotapi.Update) bool, handler func(ctx context.Context, update tgbotapi.Update) error) {
-	lst.handlers[title] = &BotListenerHandler{
-		filter:  filter,
-		handler: handler,
-		title:   title,
+	lst.handlers[title] = &ListenerFilteredHandler{
+		Filter: filter,
+		Func:   handler,
+		Title:  title,
 	}
 }
 
-func (lst *BotListener) AddCommandHandler(title string, command string, handler MessageHandler) {
-	lst.commands[command] = &BotListenerHandler{
-		filter: func(update tgbotapi.Update) bool {
-			return update.Message.IsCommand() && update.Message.Command() == command
-		},
-		handler: handler,
-		title:   title,
+func (lst *BotListener) AddCommandHandler(title string, command string, handler ListenerHandlerFunc) {
+	lst.commands[command] = &ListenerCommandHandler{
+		Command: command,
+		Func:    handler,
+		Title:   title,
 	}
 }
 
@@ -55,7 +48,7 @@ func (lst *BotListener) SetupCommandsMessage() (msg tgbotapi.SetMyCommandsConfig
 	for name, cmd := range lst.commands {
 		commands[index] = tgbotapi.BotCommand{
 			Command:     name,
-			Description: cmd.title,
+			Description: cmd.Title,
 		}
 		index++
 	}

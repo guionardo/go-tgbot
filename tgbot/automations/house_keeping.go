@@ -9,7 +9,7 @@ import (
 )
 
 func AddHouseKeepingAutomation(svc *tgbot.GoTGBotService) *tgbot.GoTGBotService {
-	svc.AddSchedule(schedules.CreateSchedule("House keeping", time.Hour, func(ctx context.Context) error {
+	svc.SetupBackgroundSchedules(schedules.CreateSchedule("House keeping", time.Hour, func(ctx context.Context) error {
 		getLogger().Info("Running House keep")
 		svc := tgbot.GetBotService(ctx)
 		err := svc.Repository().HouseKeeping(svc.Configuration().Repository.HouseKeepingMaxAge)

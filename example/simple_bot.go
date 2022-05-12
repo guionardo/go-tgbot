@@ -2,6 +2,7 @@ package example
 
 import (
 	"context"
+	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/guionardo/go-tgbot/tgbot"
@@ -12,9 +13,7 @@ func Run() {
 
 	svc := tgbot.CreateBotService().
 		LoadConfigurationFromEnv("TG_").
-		InitBot().
-		AddWorkers()
-
+		InitBot()
 
 	automations.AddHelloWorldAutomation(svc)
 	automations.AddSetupCommandsAutomation(svc)
@@ -31,20 +30,33 @@ func Run() {
 	// 	return nil
 	// }))
 
-	svc.AddCommandHandler("Menu principal", "menu", func(ctx context.Context, u tgbotapi.Update) error {
-		svc := tgbot.GetBotService(ctx)
-		svc.Publisher().SendInlineKeyboard(u.Message.Chat.ID, "Menu", "Opção 1:TESTE", "Opção 2:TESTE2", "-", "Opção 3:TESTE3")
-		return nil
-	})
+	svc.AddCommandHandlers(&tgbot.ListenerCommandHandler{
+		Command: "menu",
+		Title:   "Menu principal",
+		Func: func(ctx context.Context, u tgbotapi.Update) error {
+			svc := tgbot.GetBotService(ctx)
+			svc.Publisher().SendInlineKeyboard(u.Message.Chat.ID, "Menu", "Opção 1:TESTE", "Opção 2:TESTE2", "-", "Opção 3:TESTE3")
+			return nil
+		}}, &tgbot.ListenerCommandHandler{
+		Command: "hello",
+		Title:   "Dizer olá",
+		Func: func(ctx context.Context, u tgbotapi.Update) error {
+			svc := tgbot.GetBotService(ctx)
+			svc.Publisher().ReplyToMessage(u, fmt.Sprintf("Olá %s", u.Message.From.UserName))
+			return nil
+		}},
+	)
 
-	svc.AddHandler("all", func(update tgbotapi.Update) bool {
-		return true
-	}, func(ctx context.Context, update tgbotapi.Update) error {		
-		svc := tgbot.GetBotService(ctx)
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello, "+update.Message.From.UserName+"!")
-		msg.ReplyToMessageID = update.Message.MessageID
-		svc.Publish(msg)
-		return nil
-	})
+	svc.AddHandlers(&tgbot.ListenerFilteredHandler{
+		Title:  "all",
+		Filter: func(update tgbotapi.Update) bool { return true },
+		Func: func(ctx context.Context, update tgbotapi.Update) error {
+			svc := tgbot.GetBotService(ctx)
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello, "+update.Message.From.UserName+"!")
+			msg.ReplyToMessageID = update.Message.MessageID
+			svc.Publisher().Publish(msg)
+			return nil
+		}})
+
 	svc.Start()
 }

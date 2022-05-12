@@ -3,7 +3,6 @@ package tgbot
 import (
 	"context"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	sch "github.com/guionardo/go-tgbot/pkg/schedules"
 )
 
@@ -13,11 +12,11 @@ type BotWorker struct {
 }
 type BotWorkerAction func(ctx context.Context) error
 
-func createBotWorker(bot *tgbotapi.BotAPI, schedules *sch.ScheduleCollection) *BotWorker {
+func createBotWorker() *BotWorker {
 	worker := &BotWorker{
-		schedules: schedules,
+		schedules: sch.CreateScheduleCollection(),
 	}
-	worker.Init(bot, "BotWorker")
+	worker.Init("BotWorker")
 	return worker
 }
 
