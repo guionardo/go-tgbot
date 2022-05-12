@@ -8,6 +8,7 @@ import (
 	"github.com/guionardo/go-tgbot/tgbot"
 )
 
+// AddHouseKeepingAutomation setups hourly house keeping (cleaning up old messages, etc)
 func AddHouseKeepingAutomation(svc *tgbot.GoTGBotService) *tgbot.GoTGBotService {
 	svc.SetupBackgroundSchedules(schedules.CreateSchedule("House keeping", time.Hour, func(ctx context.Context) error {
 		getLogger().Info("Running House keep")

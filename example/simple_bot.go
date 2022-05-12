@@ -11,11 +11,13 @@ import (
 
 func Run() {
 
+	// Create bot runner from environment variables
 	svc := tgbot.CreateBotService().
 		LoadConfigurationFromEnv("TG_").
 		InitBot()
 
-	automations.AddHelloWorldAutomation(svc)
+	// Setup automations
+	automations.AddStartupGreetingsAutomation(svc)
 	automations.AddSetupCommandsAutomation(svc)
 	automations.AddHouseKeepingAutomation(svc)
 

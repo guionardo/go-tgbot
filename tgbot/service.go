@@ -97,7 +97,11 @@ func (svc *GoTGBotService) InitBot() *GoTGBotService {
 	return svc
 }
 
-func (svc *GoTGBotService) AddRepository(dbs ...*gorm.DB) *GoTGBotService {
+
+// SetDatabase sets the database for the bot repository
+//
+// If not set, the bot repository will be created with the default connection string
+func (svc *GoTGBotService) SetDatabase(dbs ...*gorm.DB) *GoTGBotService {
 	var db *gorm.DB
 	var err error
 	if len(dbs) == 0 {
@@ -115,6 +119,11 @@ func (svc *GoTGBotService) AddRepository(dbs ...*gorm.DB) *GoTGBotService {
 	return svc
 }
 
+// SetRepository sets the repository for the bot
+// 
+// You must implement a IRepository interface and pass it to this method
+//
+// Do not need to use SetDatabase
 func (svc *GoTGBotService) SetRepository(repository IRepository) *GoTGBotService {
 	svc.repository = repository
 	svc.setupLevel = Set(svc.setupLevel, Repository)
@@ -134,7 +143,7 @@ func (svc *GoTGBotService) Start() error {
 	}
 	if !Has(svc.setupLevel, Repository) {
 		svc.logger.Warnf("automatic repository created: %s", svc.configuration.Repository.ConnectionString)
-		svc.AddRepository()
+		svc.SetDatabase()
 	}
 
 	botContext, cancel := CreateBotContext(svc)
