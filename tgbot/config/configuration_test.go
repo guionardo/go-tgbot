@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-var expectedConfig = Configuration{
+var expectedConfig = &Configuration{
 	Bot: BotConfiguration{
 		Token:      "token",
 		Name:       "tgbot_test",
@@ -33,7 +33,7 @@ func TestCreateConfigurationFromFile(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		wantCfg Configuration
+		wantCfg *Configuration
 		wantErr bool
 	}{
 		{
@@ -71,8 +71,8 @@ func TestCreateConfigurationFromEnv(t *testing.T) {
 			t.Errorf("CreateConfigurationFromEnv() error = %v", err)
 			return
 		}
-		if !cmp.Equal(gotCfg, &expectedConfig) {		
-			t.Errorf("CreateConfigurationFromEnv() = %v, want %v", *gotCfg, expectedConfig)
+		if !cmp.Equal(gotCfg, expectedConfig) {		
+			t.Errorf("CreateConfigurationFromEnv() = %v, want %v", gotCfg, expectedConfig)
 		}
 	})
 
