@@ -59,5 +59,6 @@ func (lst *BotListener) SetupCommandsMessage() (msg tgbotapi.SetMyCommandsConfig
 		}
 		index++
 	}
-	return tgbotapi.NewSetMyCommands(commands...), nil
+	scope := tgbotapi.NewBotCommandScopeDefault()
+	return tgbotapi.NewSetMyCommandsWithScope(scope, commands...), nil
 }

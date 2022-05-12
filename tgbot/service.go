@@ -13,14 +13,14 @@ import (
 
 type GoTGBotService struct {
 	BotRunner
-	context         context.Context
-	listener        *BotListener
-	worker          *BotWorker
-	publisher       *BotPublisher
-	cancel          context.CancelFunc
-	stop            context.CancelFunc
-	repository      IRepository
-	configuration   *config.Configuration
+	context       context.Context
+	listener      *BotListener
+	worker        *BotWorker
+	publisher     *BotPublisher
+	cancel        context.CancelFunc
+	stop          context.CancelFunc
+	repository    IRepository
+	configuration *config.Configuration
 }
 
 // CreateBotService creates a new empty bot service
@@ -57,6 +57,7 @@ func (svc *GoTGBotService) InitBot() *GoTGBotService {
 	svc.logger = infra.GetLogger("GoTGBotService")
 	svc.logger.Infof("Init %s", svc.name)
 
+	tgbotapi.SetLogger(infra.CreateBotLogger(infra.GetLogger("tgbot")))
 	// Setup bot
 	bot, err := tgbotapi.NewBotAPI(svc.configuration.Bot.Token)
 	if err != nil {

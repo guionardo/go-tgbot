@@ -14,7 +14,7 @@ type LoggerConfiguration struct {
 	LogLevel        logrus.Level `yaml:"-" json:"-"`
 }
 
-func (cfg *LoggerConfiguration) FixDefaults() {
+func (cfg *LoggerConfiguration) FixDefaults() LoggerConfiguration {
 	cfg.Level = strings.ToLower(cfg.Level)
 	logLevel, err := logrus.ParseLevel(cfg.Level)
 	if err != nil {
@@ -27,5 +27,11 @@ func (cfg *LoggerConfiguration) FixDefaults() {
 	}
 	if len(cfg.Format) == 0 {
 		cfg.Format = "%time% %lvl% [%name%] %msg%\n"
+	}
+	return LoggerConfiguration{
+		Level:           cfg.Level,
+		FormatTimeStamp: cfg.FormatTimeStamp,
+		Format:          cfg.Format,
+		LogLevel:        cfg.LogLevel,
 	}
 }

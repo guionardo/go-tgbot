@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/sethvargo/go-envconfig"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Configuration is the configuration of the bot.
@@ -15,31 +15,31 @@ type Configuration struct {
 	Bot        BotConfiguration        `yaml:"bot" json:"bot" env:"BOT,prefix=BOT_"`
 	Repository RepositoryConfiguration `yaml:"repository" json:"repository" env:"REPOSITORY,prefix=REPOSITORY_"`
 	Logging    LoggerConfiguration     `yaml:"logging" json:"logging" env:"LOGGING,prefix=LOGGING_"`
-	LogLevel   string                  `yaml:"log_level" json:"log_level" env:"LOG_LEVEL,default=info"`
-	logLevel   logrus.Level
 }
 
-// fixDefaults checks and fixes the configuration of defaults values.
-func (cfg *Configuration) fixDefaults() {
+// FixDefaults checks and fixes the configuration of defaults values.
+func (cfg *Configuration) FixDefaults() *Configuration {
 	cfg.Bot.fixDefaults()
 	cfg.Repository.fixDefaults()
 	cfg.Logging.FixDefaults()
+	return cfg
 }
 
-func CreateConfigurationFromFile(filename string) (cfg *Configuration, err error) {
+func CreateConfigurationFromFile(filename string) (cfg Configuration, err error) {
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal(content, cfg)
+	var config Configuration
+	err = json.Unmarshal(content, &config)
 	if err != nil {
-		err = yaml.Unmarshal(content, cfg)
+		err = yaml.Unmarshal(content, &config)
 		if err != nil {
 			return
 		}
 	}
-	cfg.fixDefaults()
-	return cfg, nil
+	config.FixDefaults()
+	return config, nil
 }
 
 func CreateConfigurationFromEnv(prefix string) (cfg *Configuration, err error) {
@@ -52,6 +52,14 @@ func CreateConfigurationFromEnv(prefix string) (cfg *Configuration, err error) {
 	} else {
 		err = envconfig.Process(ctx, cfg)
 	}
-	cfg.fixDefaults()
+	cfg.FixDefaults()
 	return
+}
+
+func CreateConfigurationFromEnvFile(prefix string, filenames ...string) (cfg *Configuration, err error) {
+	err = godotenv.Load(filenames...)
+	if err != nil {
+		return
+	}
+	return CreateConfigurationFromEnv(prefix)
 }
