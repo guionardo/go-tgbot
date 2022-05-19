@@ -37,7 +37,8 @@ func Run() {
 		Title:   "Menu principal",
 		Func: func(ctx context.Context, u tgbotapi.Update) error {
 			svc := tgbot.GetBotService(ctx)
-			svc.Publisher().SendInlineKeyboard(u.Message.Chat.ID, "Menu", "Opção 1:TESTE", "Opção 2:TESTE2", "-", "Opção 3:TESTE3")
+			svc.Publisher().SendMenuKeyboard(u.Message.Chat.ID, "Menu principal", "menu", "Opção 1:OPCAO1", "Opção 2:OPCAO2", "-", "Opção 3:OPCAO3", "Opção 4:OPCAO4")
+
 			return nil
 		}}, &tgbot.ListenerCommandHandler{
 		Command: "hello",
@@ -48,6 +49,12 @@ func Run() {
 			return nil
 		}},
 	)
+
+	svc.AddCallbackHandlers(tgbot.CreateListenerCallbackHandler("menu", "menu", func(ctx context.Context, u tgbotapi.Update) error {
+		svc := tgbot.GetBotService(ctx)
+		svc.Publisher().SendHTMLMessage(u.CallbackQuery.Message.Chat.ID, fmt.Sprintf("MENU: <b>%s</b>", u.CallbackQuery.Data))
+		return nil
+	}))
 
 	svc.AddHandlers(&tgbot.ListenerFilteredHandler{
 		Title:  "all",

@@ -62,3 +62,21 @@ TG_REPOSITORY_CONNECTION_STRING=tgbot.db
 TG_BOT_NAME='GO Bot'
 TG_BOT_HOUSEKEEPING_MAX_AGE=6h
 ```
+
+## Structures
+
+```mermaid
+erDiagram
+    MESSAGE {
+        int64 ChatID PK 
+        int MessageId PK 
+        Time MessageTime "Timestamp of message"
+        string Message "Serialized received message"
+    }
+    CHAT {
+        int64 ID PK
+        string Type "[private, group, supergroup, channel]"
+        string Title "Title for supergroups, channels and group chats"
+        string UserName "UserName for private chats, supergroups and channels if available"
+    }    
+```

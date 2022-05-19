@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/guionardo/go-tgbot/tgbot/helpers"
 	"github.com/guionardo/go-tgbot/tgbot/runners"
 )
 
@@ -53,22 +54,27 @@ func BotListenerAction(ctx context.Context, runner *runners.Runner) error {
 				callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
 				if _, err := svc.bot.Request(callback); err != nil {
 					lst.logger.Errorf("cannot get request - %v", err)
+				} else {
+					lst.logger.Infof("callback request - %v", callback)
 				}
 
-				// And finally, send a message containing the data received.
-				msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
-				svc.publisher.Publish(msg)
-				continue
+				for _, callbackHandler := range lst.callbackHandlers {
+					if callbackHandler.Filter(update) {
+						handlerFunc = callbackHandler.Func
+						handlerTitle = callbackHandler.Title
+						break
+					}
+				}
 			}
 			if handlerFunc == nil {
-				lst.logger.Warningf("[UNHANDLED] %s : %s", update.Message.From.UserName, update.Message.Text)
+				lst.logger.Warningf("[UNHANDLED] %s", helpers.UpdateToString(update))
 				continue
 			}
 			err := handlerFunc(ctx, update)
 			if err == nil {
-				lst.logger.Infof("[%s] %s : %s", handlerTitle, update.Message.From.UserName, update.Message.Text)
+				lst.logger.Infof("[%s] %s", handlerTitle, helpers.UpdateToString(update))
 			} else {
-				lst.logger.Errorf("[%s] %v - %s : %s", handlerTitle, err, update.Message.From.UserName, update.Message.Text)
+				lst.logger.Errorf("[%s] %v - %s", handlerTitle, err, helpers.UpdateToString(update))
 			}
 		}
 	}

@@ -18,6 +18,47 @@ func CreateHTMLMessage(chatID int64, htmlMessage string) tgbotapi.MessageConfig 
 	return msg
 }
 
+// getMenuOption -> caption:command|value
+func GetMenuOption(keyboardOption string) (command string, caption string, value string, isLineBreak bool) {
+	if strings.TrimSpace(keyboardOption) == "-" {
+		isLineBreak = true
+		return
+	}
+
+	caption, value, found := strings.Cut(keyboardOption, ":")
+	if !found {
+		caption = keyboardOption
+		value = keyboardOption
+	}
+	command, newValue, found := strings.Cut(value, "|")
+	if !found {
+		command = ""
+	} else {
+		value = newValue
+	}
+
+	return
+}
+
+func CreateKeyboardMessageWithCommand(chatID int64, caption string, baseCommand string, keyboardOptions ...string) tgbotapi.MessageConfig {
+	if len(keyboardOptions) == 0 {
+		return CreateTextMessage(chatID, "[no keyboard options]")
+	}
+
+	for index, option := range keyboardOptions {
+		menuOption := ParseBotMenuOption(option)
+
+		if menuOption.IsLineBreak {
+			continue
+		}
+		menuOption.Command = baseCommand
+
+		keyboardOptions[index] = menuOption.String()
+
+	}
+	return CreateKeyboardMessage(chatID, caption, keyboardOptions...)
+}
+
 func CreateKeyboardMessage(chatID int64, text string, keyboardOptions ...string) tgbotapi.MessageConfig {
 	if len(keyboardOptions) == 0 {
 		return CreateTextMessage(chatID, "[no keyboard options]")
@@ -26,22 +67,20 @@ func CreateKeyboardMessage(chatID int64, text string, keyboardOptions ...string)
 	keyboard := tgbotapi.InlineKeyboardMarkup{}
 	currentRow := make([]tgbotapi.InlineKeyboardButton, 0)
 	for _, option := range keyboardOptions {
-		if option == "-" {
+		menuOption := ParseBotMenuOption(option)
+
+		if menuOption.IsLineBreak {
 			if len(currentRow) > 0 {
 				keyboard.InlineKeyboard = append(keyboard.InlineKeyboard, currentRow)
 			}
 			currentRow = make([]tgbotapi.InlineKeyboardButton, 0)
 			continue
 		}
-		title, value, found := strings.Cut(option, ":")
-		if !found {
-			title = option
-			value = option
-		}
-		if IsValidUrl(value) {
-			currentRow = append(currentRow, tgbotapi.NewInlineKeyboardButtonURL(title, value))
+
+		if IsValidUrl(menuOption.Value) {
+			currentRow = append(currentRow, tgbotapi.NewInlineKeyboardButtonURL(menuOption.Caption, menuOption.Value))
 		} else {
-			currentRow = append(currentRow, tgbotapi.NewInlineKeyboardButtonData(title, value))
+			currentRow = append(currentRow, tgbotapi.NewInlineKeyboardButtonData(menuOption.Caption, menuOption.MessageValue()))
 		}
 	}
 	if len(currentRow) > 0 {

@@ -15,3 +15,11 @@ func (svc *GoTGBotService) AddCommandHandlers(handlers ...*ListenerCommandHandle
 	svc.setupLevel = Set(svc.setupLevel, Handlers)
 	return svc
 }
+
+func (svc *GoTGBotService) AddCallbackHandlers(handlers ...*ListenerCallbackHandler) *GoTGBotService {
+	for _, handler := range handlers {
+		svc.listener.AddCallbackHandler(handler.Title, handler.Filter, handler.Func)
+	}
+	svc.setupLevel = Set(svc.setupLevel, Handlers)
+	return svc
+}

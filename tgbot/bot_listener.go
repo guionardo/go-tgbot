@@ -9,14 +9,16 @@ import (
 
 type BotListener struct {
 	BotRunner
-	handlers map[string]*ListenerFilteredHandler
-	commands map[string]*ListenerCommandHandler
+	handlers         map[string]*ListenerFilteredHandler
+	commands         map[string]*ListenerCommandHandler
+	callbackHandlers map[string]*ListenerCallbackHandler
 }
 
 func createBotListener(bot *tgbotapi.BotAPI) *BotListener {
 	listener := &BotListener{
-		handlers: make(map[string]*ListenerFilteredHandler),
-		commands: make(map[string]*ListenerCommandHandler),
+		handlers:         make(map[string]*ListenerFilteredHandler),
+		commands:         make(map[string]*ListenerCommandHandler),
+		callbackHandlers: make(map[string]*ListenerCallbackHandler),
 	}
 	listener.Init("BotListener")
 	return listener
@@ -35,6 +37,14 @@ func (lst *BotListener) AddCommandHandler(title string, command string, handler 
 		Command: command,
 		Func:    handler,
 		Title:   title,
+	}
+}
+
+func (lst *BotListener) AddCallbackHandler(title string, filter func(update tgbotapi.Update) bool, handler ListenerHandlerFunc) {
+	lst.callbackHandlers[title] = &ListenerCallbackHandler{
+		Filter: filter,
+		Func:   handler,
+		Title:  title,
 	}
 }
 
